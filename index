@@ -515,7 +515,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 function cfg(){return JSON.parse(localStorage.getItem('ats_cfg')||'{}')}
 function saveCfg(obj){localStorage.setItem('ats_cfg',JSON.stringify({...cfg(),...obj}))}
 
-let SCRIPT_URL = cfg().url || '';
+let SCRIPT_URL = cfg().url || 'https://script.google.com/macros/s/AKfycbzMtj_uflGHpyA5PHl7As8nki8DH0m2lb_dvpZ0y2ElkhuNf6MfkuYryyBEzlgRZe2WUw/exec';
 let state = {candidatos:[],posiciones:[],emails:[]};
 let curCVText='', curCVFile=null, lastScore=null, lastAI='';
 
