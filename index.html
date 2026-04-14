@@ -513,10 +513,25 @@ async function handleCV(ev){
     cvTxt=txt;
     fn.textContent='✓ '+f.name+' — '+txt.length+' caracteres extraídos';
     fn.style.color='var(--gr)';
+
+    // AUTOCOMPLETAR nombre y email desde el CV
+    const emailM=txt.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+    const telM=txt.match(/(\+?\d[\d\s\-\.]{6,13}\d)/);
+    // Intentar extraer nombre: primera línea con texto significativo
+    const lines=txt.split('\n').map(l=>l.trim()).filter(l=>l.length>3&&l.length<60&&!/[@\d]/.test(l));
+    const posibleNombre=lines[0]||'';
+
+    const nEl=document.getElementById('nc-n');
+    const eEl=document.getElementById('nc-e');
+    const tEl=document.getElementById('nc-t');
+    if(nEl&&!nEl.value&&posibleNombre) nEl.value=posibleNombre;
+    if(eEl&&!eEl.value&&emailM) eEl.value=emailM[0];
+    if(tEl&&!tEl.value&&telM) tEl.value=telM[0].trim();
+
     document.getElementById('cv-ta').value=txt.substring(0,3000)+(txt.length>3000?'\n...[completo guardado]':'');
     document.getElementById('cv-prev').style.display='block';
     document.getElementById('ai-sec').style.display='block';
-    toast('CV leído correctamente ✓','ok');
+    toast('CV leído ✓ — datos autocompletados','ok');
   }catch(e){
     fn.textContent='❌ Error: '+e.message;
     fn.style.color='var(--re)';
@@ -631,7 +646,7 @@ async function guardarCand(){
   const p=document.getElementById('nc-p').value;
   if(!n||!e||!p){toast('Completá nombre, email y posición','err');return}
   toast('Guardando...','ok');
-  await apiPost({action:'addCandidato',nombre:n,email:e,tel:document.getElementById('nc-t').value.trim(),posicionId:p,cvText:cvTxt.substring(0,4000),cvFile:cvFile?.name||'',compatibilidad:lastScore||'',aiAnalysis:lastAI.substring(0,2500),stage:0,notas:''});
+  await apiPost({action:'addCandidato',nombre:n,email:e,tel:document.getElementById('nc-t').value.trim(),posicionId:p,cvText:cvTxt.substring(0,4000),cvFile:cvFile?.name||'',compatibilidad:lastScore||'',aiAnalysis:lastAI.substring(0,2500),stage:0,notas:'',fechaCarga:new Date().toLocaleDateString('es-AR')});
   closeM('m-cand');
   toast('Candidato guardado ✓','ok');
   await syncAll();
@@ -643,14 +658,14 @@ function renderCandTable(list,id){
   w.innerHTML='<table><thead><tr><th>Candidato</th><th>Posición</th><th>Compat.</th><th>Etapa</th><th>Fecha</th><th></th></tr></thead><tbody>'+
   list.map(c=>{
     const pos=S.pos.find(p=>String(p.id)===String(c.posicionId));
-    const sc=c.compatibilidad?parseInt(c.compatibilidad):null;
+    const sc=(c.compatibilidad!==null&&c.compatibilidad!==undefined&&c.compatibilidad!=='')?parseInt(c.compatibilidad):null;
     const col=sc!=null?cc(sc):'var(--mt)';
     const a=av(c.nombre);
     return '<tr class="cr" onclick="showDet(\''+c.id+'\')"><td><div style="display:flex;align-items:center;gap:9px"><div class="av" style="width:30px;height:30px;background:'+a+'22;color:'+a+';font-size:12px">'+ini(c.nombre)+'</div><div><div style="font-weight:600">'+c.nombre+'</div><div style="font-size:11px;color:var(--mt)">'+c.email+'</div></div></div></td>'
     +'<td>'+(pos?pos.titulo:'—')+'</td>'
     +'<td><div class="cbr"><div class="cbr-bg"><div class="cbr-f" style="width:'+(sc||0)+'%;background:'+col+'"></div></div><div class="cbr-n" style="color:'+col+'">'+(sc!=null?sc+'%':'—')+'</div></div></td>'
     +'<td><span class="ba ba-p">'+STAGES[parseInt(c.stage)||0]+'</span></td>'
-    +'<td style="font-size:11px;color:var(--mt)">'+(c.fechaCarga||'—')+'</td>'
+    +'<td style="font-size:11px;color:var(--mt)">'+(c.fechaCarga?new Date(c.fechaCarga).toLocaleDateString('es-AR'):c.fechaCarga||'—')+'</td>'
     +'<td onclick="event.stopPropagation()"><div style="display:flex;gap:5px"><button class="btn btn-g" style="padding:4px 9px;font-size:11px" onclick="moverEtapa(\''+c.id+'\',1)">→</button><button class="btn btn-d" style="padding:4px 9px;font-size:11px" onclick="borrarCand(\''+c.id+'\')">✕</button></div></td>'
     +'</tr>';
   }).join('')+'</tbody></table>';
@@ -689,7 +704,7 @@ async function borrarCand(id){
 function showDet(id){
   const c=S.cands.find(c=>String(c.id)===String(id));if(!c)return;
   const pos=S.pos.find(p=>String(p.id)===String(c.posicionId));
-  const sc=c.compatibilidad?parseInt(c.compatibilidad):null;
+  const sc=(c.compatibilidad!==null&&c.compatibilidad!==undefined&&c.compatibilidad!=='')?parseInt(c.compatibilidad):null;
   const a=av(c.nombre);
   document.getElementById('det-tt').textContent=c.nombre;
   document.getElementById('det-body').innerHTML=
